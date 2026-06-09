@@ -1,0 +1,6 @@
+{
+  "name": "BI Analitico Estrategico",
+  "description": "Sistema de BI e suporte a tomadas de decisões corporativas com modelo RandomForest para previsão de churn e propensity scoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
