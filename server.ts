@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import 'reflect-metadata';
 import { Injectable, Controller, Get, Post, Body, Module, Inject } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
