@@ -1,7 +1,15 @@
-import express from 'express';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import 'reflect-metadata';
+import { Injectable, Controller, Get, Post, Body, Module, Inject } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 
 const PORT = 3000;
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -188,100 +196,146 @@ const PEDIDOS_PADRAO = [
   }
 ];
 
-// Assegurar diretório e banco local
-function initDatabase() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+@Injectable()
+export class DataService {
+  private readonly dataDir = path.join(process.cwd(), 'data');
+  private readonly dataFile = path.join(this.dataDir, 'db.json');
+
+  constructor() {
+    this.initDatabase();
   }
-  
-  if (!fs.existsSync(DATA_FILE)) {
-    const defaultData = {
-      clientes: CLIENTES_PADRAO,
-      produtos: PRODUTOS_PADRAO,
-      pedidos: PEDIDOS_PADRAO
-    };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2), 'utf-8');
-    console.log('Banco de dados inicializado em ' + DATA_FILE);
+
+  private initDatabase() {
+    if (!fs.existsSync(this.dataDir)) {
+      fs.mkdirSync(this.dataDir, { recursive: true });
+    }
+    
+    if (!fs.existsSync(this.dataFile)) {
+      const defaultData = {
+        clientes: CLIENTES_PADRAO,
+        produtos: PRODUTOS_PADRAO,
+        pedidos: PEDIDOS_PADRAO
+      };
+      fs.writeFileSync(this.dataFile, JSON.stringify(defaultData, null, 2), 'utf-8');
+      console.log('Banco de dados inicializado em ' + this.dataFile);
+    }
+  }
+
+  readDatabase() {
+    try {
+      this.initDatabase();
+      const raw = fs.readFileSync(this.dataFile, 'utf-8');
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error('Erro lendo db.json:', err);
+      return { clientes: CLIENTES_PADRAO, produtos: PRODUTOS_PADRAO, pedidos: PEDIDOS_PADRAO };
+    }
+  }
+
+  writeDatabase(data: any) {
+    try {
+      fs.writeFileSync(this.dataFile, JSON.stringify(data, null, 2), 'utf-8');
+      return true;
+    } catch (err) {
+      console.error('Erro gravando db.json:', err);
+      return false;
+    }
   }
 }
 
-initDatabase();
+@Controller('api')
+export class DataController {
+  constructor(@Inject(DataService) private readonly dataService: DataService) {}
 
-// Ler banco de dados salvos
-function readDatabase() {
-  try {
-    initDatabase();
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Erro lendo db.json:', err);
-    return { clientes: CLIENTES_PADRAO, produtos: PRODUTOS_PADRAO, pedidos: PEDIDOS_PADRAO };
+  @Get('data')
+  getData() {
+    return this.dataService.readDatabase();
   }
-}
 
-// Escrever banco de dados salvos
-function writeDatabase(data: any) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Erro gravando db.json:', err);
-    return false;
-  }
-}
-
-async function startServer() {
-  const app = express();
-
-  // Middleware parser de JSON
-  app.use(express.json({ limit: '20mb' }));
-
-  // API - Carregar dados consolidados
-  app.get('/api/data', (_req, res) => {
-    const db = readDatabase();
-    res.json(db);
-  });
-
-  // API - Salvar dados consolidados (Atomicity persistent batch save)
-  app.post('/api/data', (req, res) => {
-    const { clientes, produtos, pedidos } = req.body;
+  @Post('data')
+  saveData(@Body() body: any) {
+    const { clientes, produtos, pedidos } = body;
+    
+    console.log('[SGBD SINC API] Recebida requisição de sincronização (POST /api/data):');
+    console.log(` -> Clientes recebidos: ${clientes?.length ?? 0}`);
+    console.log(` -> Produtos recebidos: ${produtos?.length ?? 0}`);
+    console.log(` -> Pedidos recebidos: ${pedidos?.length ?? 0}`);
     
     if (!Array.isArray(clientes) || !Array.isArray(produtos) || !Array.isArray(pedidos)) {
-      return res.status(400).json({ error: 'Formato invãlido dos arrays do SGBD de persistência.' });
+      console.warn('[SGBD SINC API] Erro: Corpo da requisição com formato de arrays inválido.');
+      return { error: 'Formato inválido dos arrays do SGBD de persistência.' };
     }
 
-    const success = writeDatabase({ clientes, produtos, pedidos });
+    const success = this.dataService.writeDatabase({ clientes, produtos, pedidos });
     
     if (success) {
-      res.json({ ok: true, message: 'Dados gravados com sucesso física e permanentemente no SGBD servidor.' });
+      console.log('[SGBD SINC API] Dados gravados com sucesso no arquivo local /data/db.json!');
+      return { ok: true, message: 'Dados gravados com sucesso física e permanentemente no SGBD servidor.' };
     } else {
-      res.status(500).json({ error: 'Erro de E/S gravando o banco de dados no disco do servidor.' });
+      console.error('[SGBD SINC API] Erro crítico ao tentar gravar /data/db.json.');
+      throw new Error('Erro de E/S gravando o banco de dados no disco do servidor.');
     }
-  });
-
-  // API - Status de Conectividade
-  app.get('/api/status', (_req, res) => {
-    res.json({ status: 'online', mode: 'fullstack', engine: 'SQLite/Virtual JSON SGBD' });
-  });
-
-  // Configuração Vite Middleware para ambiente de desenvolvimento / produção
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Full-Stack Server] SGBD persistente escutando em http://localhost:${PORT}`);
-  });
+  @Get('status')
+  getStatus() {
+    return { status: 'online', mode: 'fullstack', engine: 'NestJS Framework / SQLite Virtual JSON SGBD' };
+  }
 }
 
-startServer();
+@Module({
+  controllers: [DataController],
+  providers: [DataService],
+})
+export class AppModule {}
+
+async function startServer() {
+  try {
+    console.log('[NestJS Bootstrap] Iniciando processo de criação da aplicação...');
+    // Desativando o body parser padrão do NestJS para evitar dupla decodificação e permitir o limite de 20mb de forma limpa
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+    console.log('[NestJS Bootstrap] Aplicação Nest criada com sucesso.');
+    
+    // Limites aumentados para uploads e sincronização de dados grandes
+    app.use(express.json({ limit: '20mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+
+    const expressInstance = app.getHttpAdapter().getInstance();
+
+    if (process.env.NODE_ENV !== 'production') {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      expressInstance.use((req: any, res: any, next: any) => {
+        if (req.path.startsWith('/api')) {
+          return next();
+        }
+        vite.middlewares(req, res, next);
+      });
+    } else {
+      const distPath = path.join(process.cwd(), 'dist');
+      console.log('[NestJS Bootstrap] Configurando arquivos estáticos de produção a partir de:', distPath);
+      expressInstance.use(express.static(distPath));
+      expressInstance.get('*all', (req: Request, res: Response, next: any) => {
+        if (req.path.startsWith('/api')) {
+          return next();
+        }
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    console.log(`[NestJS Bootstrap] Tentando escutar na porta ${PORT} com host 0.0.0.0...`);
+    await app.listen(PORT, '0.0.0.0');
+    console.log(`[NestJS Full-Stack Server] SGBD persistente ativo na porta http://localhost:${PORT}`);
+  } catch (err) {
+    console.error('[NestJS Bootstrap FATAL ERROR]', err);
+    process.exit(1);
+  }
+}
+
+startServer().catch(err => {
+  console.error('[NestJS Top-Level Hook FATAL ERROR]', err);
+  process.exit(1);
+});

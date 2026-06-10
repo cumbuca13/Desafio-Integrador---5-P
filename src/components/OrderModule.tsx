@@ -66,7 +66,8 @@ export function OrderModule({
     if (campo === 'produtoId') {
       novos[index].produtoId = valor as string;
     } else {
-      novos[index].quantidade = Math.max(1, Number(valor));
+      const parsedVal = parseInt(valor as string, 10);
+      novos[index].quantidade = isNaN(parsedVal) ? NaN : Math.max(1, parsedVal);
     }
     setItensCarrinho(novos);
   };
@@ -100,6 +101,10 @@ export function OrderModule({
     itensCarrinho.forEach((item, idx) => {
       if (!item.produtoId) {
         estoqueErros.push(`A linha ${idx + 1} está sem produto selecionado.`);
+        return;
+      }
+      if (isNaN(item.quantidade) || item.quantidade <= 0) {
+        estoqueErros.push(`A linha ${idx + 1} deve ter uma quantidade válida e positiva.`);
         return;
       }
       const prod = produtos.find((p) => p.id === item.produtoId);
@@ -404,7 +409,7 @@ export function OrderModule({
                           <input
                             type="number"
                             min="1"
-                            value={item.quantidade}
+                            value={isNaN(item.quantidade) ? '' : item.quantidade}
                             onChange={(e) => atualizarItemCarrinho(idx, 'quantidade', e.target.value)}
                             className="w-full text-center text-xs font-mono font-bold bg-slate-900 border border-slate-800 text-white rounded-md p-1.5"
                           />

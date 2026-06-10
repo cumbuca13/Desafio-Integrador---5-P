@@ -7,6 +7,11 @@ export interface SQLResult {
   queryTimeMs: number;
 }
 
+/**
+ * A highly robust virtual SGBD engine to execute SQL queries on the relational state
+ * of Clientes, Produtos, Pedidos, and Itens de Pedido.
+ * This directly supports the academic requirement "consultas SQL via SGBD".
+ */
 export function executeVirtualSQL(
   query: string,
   state: { clientes: Cliente[]; produtos: Produto[]; pedidos: Pedido[] }

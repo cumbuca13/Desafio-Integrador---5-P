@@ -1,5 +1,7 @@
 # Plataforma de BI Analítico Estratégico com IA e Terminal SGBD Interativo
 
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 O ecossistema do projeto é moderno, componentizado e escalável:
@@ -13,10 +15,10 @@ O ecossistema do projeto é moderno, componentizado e escalável:
   - **Motion**: Adição de transições e micro-animações fluidas nas rotas e módulos do sistema.
 
 - **Backend (Full-Stack Engine)**:
-  - **Express**: Servidor de backend responsável por expor as APIs de coleta e persistência.
-  - **tsx**: Execução dinâmica de arquivos TypeScript em modo de desenvolvimento.
-  - **Esbuild**: Compilação e bundling do servidor para produção em um arquivo CJS autônomo (`dist/server.cjs`).
-  - **SGBD Virtual / JSON-Server**: Sistema físico de armazenamento de arquivos em disco para persistência elástica dos dados corporativos em `./data/db.json`.
+  - **NestJS**: Framework opinativo, modular e escalável para Node.js, responsável por expor as APIs de controle e persistência.
+  - **tsx**: Executora ágil e imediata de arquivos TypeScript contendo decoradores e metadados em ambiente de desenvolvimento.
+  - **Esbuild**: Empresa de empacotamento ultrarrápido para bundling do NestJS e seus provedores de rota para modo produção.
+  - **SGBD Virtual / Arquivo Físico**: Banco de dados estruturado em disco (`./data/db.json`) sob regras de atomicidade monitoradas pelo NestJS.
 
 ---
 
@@ -34,7 +36,7 @@ npm install
 ```
 
 ### 3. Execução em Modo de Desenvolvimento
-Para iniciar o servidor Express integrado ao Vite na porta `3000`:
+Para iniciar o servidor NestJS integrado ao Vite na porta `3000`:
 ```bash
 npm run dev
 ```

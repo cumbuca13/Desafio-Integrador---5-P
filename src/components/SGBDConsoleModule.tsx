@@ -100,7 +100,7 @@ export function SGBDConsoleModule({ clientes, produtos, pedidos, persistenceMode
               Persistência de Estado
             </span>
             <span className="text-xs font-mono font-bold text-emerald-400 block leading-tight">
-              {persistenceMode === 'fullstack' ? 'Full-Stack (JSON-Server + DB)' : 'Local Engine Ativo'}
+              {persistenceMode === 'fullstack' ? 'Full-Stack (NestJS Server + DB)' : 'Local Engine Ativo'}
             </span>
           </div>
         </div>

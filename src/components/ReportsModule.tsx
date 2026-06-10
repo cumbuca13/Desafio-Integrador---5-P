@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Cliente, Produto, Pedido, MLResult } from '../types';
 import { extrairFeaturesDosClientes, tratarRegistrosDuplicados, tratarOutliersFeatures, RandomForest } from '../utils/randomForest';
 import { FileText, Printer, BarChart2, Globe, TrendingDown, Target, HelpCircle, ArrowRight, CheckCircle, Flame, AlertCircle } from 'lucide-react';
+import { exportExecutivePDF } from '../utils/pdfGenerator';
 
 interface ReportsModuleProps {
   clientes: Cliente[];
@@ -158,11 +159,40 @@ export function ReportsModule({ clientes, produtos, pedidos }: ReportsModuleProp
 
   const [showPrintToast, setShowPrintToast] = useState(false);
 
-  const handlePrintMock = () => {
-    setShowPrintToast(true);
-    setTimeout(() => {
-      setShowPrintToast(false);
-    }, 5500);
+  const handleExportCurrentTabPDF = () => {
+    try {
+      exportExecutivePDF({
+        reportType: activeReportTab,
+        vendasProdutos: obterRelatorioVendasProdutos(),
+        geografico: obterRelatorioGeografico(),
+        retencao: obterRelatorioRetencao(),
+        upselling: obterRelatorioUpselling(),
+        faturamentoTotal: pedidosConcluidos.reduce((acc, p) => acc + p.valorTotal, 0),
+        melhorDesempenho: obterRelatorioVendasProdutos()[0]?.nome || '',
+        totalPedidosConcluidos: pedidosConcluidos.length,
+        totalClientes: clientes.length
+      });
+    } catch (error) {
+      console.error('Erro na exportação de PDF da aba atual:', error);
+    }
+  };
+
+  const handleExportConsolidatedPDF = () => {
+    try {
+      exportExecutivePDF({
+        reportType: 'consolidado',
+        vendasProdutos: obterRelatorioVendasProdutos(),
+        geografico: obterRelatorioGeografico(),
+        retencao: obterRelatorioRetencao(),
+        upselling: obterRelatorioUpselling(),
+        faturamentoTotal: pedidosConcluidos.reduce((acc, p) => acc + p.valorTotal, 0),
+        melhorDesempenho: obterRelatorioVendasProdutos()[0]?.nome || '',
+        totalPedidosConcluidos: pedidosConcluidos.length,
+        totalClientes: clientes.length
+      });
+    } catch (error) {
+      console.error('Erro na exportação de PDF Consolidado:', error);
+    }
   };
 
   return (
@@ -237,15 +267,24 @@ export function ReportsModule({ clientes, produtos, pedidos }: ReportsModuleProp
 
       {/* Report Canvas */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-md p-6 space-y-6 relative">
-        {/* Floating Print Trigger */}
-        <div className="absolute right-6 top-6 print:hidden">
+        {/* Floating Print Trigger Group */}
+        <div className="absolute right-6 top-6 print:hidden flex items-center gap-2">
           <button
-            onClick={handlePrintMock}
-            placeholder="Mock Print"
-            className="flex items-center gap-1.5 p-1.5 px-3 text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-lg transition-all cursor-pointer font-semibold"
+            onClick={handleExportCurrentTabPDF}
+            className="flex items-center gap-1.5 p-1.5 px-3 py-1.5 text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-350 hover:text-white rounded-lg transition-all cursor-pointer font-semibold shadow-sm"
+            title="Exportar apenas a aba visualizada no momento"
+          >
+            <FileText size={13} className="text-slate-400" />
+            PDF Relatório Atual
+          </button>
+          
+          <button
+            onClick={handleExportConsolidatedPDF}
+            className="flex items-center gap-1.5 p-1.5 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-505 text-white border border-indigo-500 rounded-lg transition-all cursor-pointer font-semibold shadow-md shadow-indigo-500/10"
+            title="Exportar dossiê executivo completo contendo todas as seções"
           >
             <Printer size={13} />
-            Exportar / Imprimir
+            PDF Completo Corporativo
           </button>
         </div>
 

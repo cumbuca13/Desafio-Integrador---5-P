@@ -362,7 +362,7 @@ export function ProductModule({
                       type="number"
                       step="0.01"
                       id="input-prod-preco"
-                      value={preco || ''}
+                      value={isNaN(preco) ? '' : preco}
                       onChange={(e) => setPreco(parseFloat(e.target.value))}
                       placeholder="Ex: 1450.50"
                       className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg text-sm p-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 font-mono"
@@ -374,7 +374,7 @@ export function ProductModule({
                     <input
                       type="number"
                       id="input-prod-estoque"
-                      value={estoque ?? ''}
+                      value={isNaN(estoque) ? '' : estoque}
                       onChange={(e) => setEstoque(parseInt(e.target.value))}
                       placeholder="Ex: 25"
                       className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg text-sm p-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 font-mono"

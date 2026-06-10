@@ -32,14 +32,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'produtos' | 'pedidos' | 'decisao' | 'relatorios' | 'sgbd'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Estados principais com persistência em localStorage e Express SGBD
+  // Estados principais com persistência em localStorage e NestJS SGBD
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [notificacao, setNotificacao] = useState<{ mensagem: string; tipo: 'sucesso' | 'erro' } | null>(null);
   const [persistenceMode, setPersistenceMode] = useState<'local' | 'fullstack'>('local');
 
-  // Carregar dados iniciais e reidratar do SGBD do Express ou localStorage
+  // Carregar dados iniciais e reidratar do SGBD do NestJS ou localStorage
   useEffect(() => {
     const carregarConfiguracaoPersistencia = async () => {
       try {
@@ -49,7 +49,7 @@ export default function App() {
           if (status.status === 'online') {
             setPersistenceMode('fullstack');
             
-            // Carregar dados do Express Backend
+            // Carregar dados do NestJS Backend
             const resData = await fetch('/api/data');
             if (resData.ok) {
               const data = await resData.json();
@@ -66,7 +66,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.log('Express API offline ou indisponível temporariamente. Usando engine localStorage Local.');
+        console.log('NestJS API offline ou indisponível temporariamente. Usando engine localStorage Local.');
       }
 
       // Fallback para localStorage
@@ -87,7 +87,7 @@ export default function App() {
     carregarConfiguracaoPersistencia();
   }, []);
 
-  // Sincronizar localmente e enviar pro servidor Express se disponível
+  // Sincronizar localmente e enviar pro servidor NestJS se disponível
   const salvarNoDispositivo = async (novosCli: Cliente[], novosProd: Produto[], novosPed: Pedido[]) => {
     localStorage.setItem('BI_CLIENTES', JSON.stringify(novosCli));
     localStorage.setItem('BI_PRODUTOS', JSON.stringify(novosProd));
@@ -103,7 +103,7 @@ export default function App() {
         setPersistenceMode('fullstack');
       }
     } catch (err) {
-      console.log('Falha ao persistir dados no Express:', err);
+      console.log('Falha ao persistir dados no NestJS:', err);
     }
   };
 
